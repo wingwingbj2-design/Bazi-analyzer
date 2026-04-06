@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>八字分析系統</title>
+<style>
+body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+.form-group { margin: 15px 0; }
+input, select { width: 100%; padding: 10px; margin: 5px 0; }
+button { background: #4f46e5; color: white; padding: 12px 24px; border: none; cursor: pointer; }
+.result { background: #f0f9ff; padding: 20px; margin: 20px 0; border-radius: 10px; }
+</style>
+</head>
+<body>
+<h1>兒童八字分析系統</h1>
+<form id="baziForm">
+<div class="form-group">
+<label>兒童姓名：</label>
+<input type="text" id="name" placeholder="輸入兒童姓名" required>
+</div>
+<div class="form-group">
+<label>性別：</label>
+<select id="gender" required>
+<option value="">選擇性別</option>
+<option value="M">男</option>
+<option value="F">女</option>
+</select>
+</div>
+<div class="form-group">
+<label>出生日期：</label>
+<input type="date" id="birthdate" required>
+</div>
+<div class="form-group">
+<label>出生時間：</label>
+<input type="time" id="birthtime" required>
+<small style="color: #666; display: block; margin-top: 5px;">請輸入24小時制時間（例如：13:24）</small>
+</div>
+<div class="form-group">
+<label>出生地點：</label>
+<input type="text" id="location" placeholder="輸入出生地點" required>
+</div>
+<button type="submit">開始分析</button>
+</form>
+
+<div id="result" class="result" style="display:none;">
+<h3>分析結果</h3>
+<div id="resultContent"></div>
+</div>
+
+<script>
+// 設置默認日期為3年前
+const defaultDate = new Date();
+defaultDate.setFullYear(defaultDate.getFullYear() - 3);
+document.getElementById('birthdate').valueAsDate = defaultDate;
+
+// 設置默認時間為下午1點
+document.getElementById('birthtime').value = '13:00';
+document.getElementById('baziForm').addEventListener('submit', async function(e) {
+e.preventDefault();
+
+const data = {
+name: document.getElementById('name').value,
+gender: document.getElementById('gender').value,
+birthdate: document.getElementById('birthdate').value,
+birthtime: document.getElementById('birthtime').value,
+location: document.getElementById('location').value
+};
+
+// 驗證所有欄位已填寫
+if (!data.name || !data.gender || !data.birthdate || !data.birthtime || !data.location) {
+alert('請填寫所有欄位');
+return;
+}
+
+document.getElementById('resultContent').innerHTML = '分析中...';
+document.getElementById('result').style.display = 'block';
+
+try {
+const response = await fetch('/api/analyze', {
+method: 'POST',
+headers: {'Content-Type': 'application/json'},
+body: JSON.stringify(data)
+});
+
+const result = await response.json();
+if (result.success) {
+const d = result.data;
+let html = `<p><strong>${d.name}（${d.gender}）</strong></p>`;
+html += `<p><strong>八字：</strong>${d.bazi.join(' ')}</p>`;
+html += `<p><strong>性格分析：</strong>${d.character_analysis}</p>`;
+html += `<p><strong>潛能方向：</strong>${d.potential_analysis}</p>`;
+html += `<h4>分齡教育建議：</h4>`;
+
+d.age_suggestions.forEach(item => {
+html += `<p><strong>${item.age_range}：</strong>${item.suggestion}</p>`;
+});
+
+document.getElementById('resultContent').innerHTML = html;
+} else {
+document.getElementById('resultContent').innerHTML = '分析錯誤：' + (result.error || '請稍後重試');
+}
+} catch (error) {
+document.getElementById('resultContent').innerHTML = '網絡錯誤，請檢查連接後重試';
+}
+});
+</script>
+</body>
+</html>
